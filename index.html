@@ -3,62 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Monitor - Advanced Visualization</title>
+    <title>Air Monitor - Special Edition Dec 2025</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --card-bg: #ffffff; --text-color: #212529; }
-        [data-bs-theme="dark"] { --card-bg: #212529; --text-color: #f8f9fa; }
+        :root { --card-bg: #ffffff; --text-color: #212529; --bg-color: #f8f9fa; }
+        [data-bs-theme="dark"] { --card-bg: #212529; --text-color: #f8f9fa; --bg-color: #121212; }
         
-        body { font-family: 'Inter', sans-serif; transition: 0.3s; background-color: var(--bs-body-bg); color: var(--text-color); }
-        .card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); background-color: var(--card-bg); margin-bottom: 20px; }
+        body { font-family: 'Inter', sans-serif; transition: 0.3s; background-color: var(--bg-color); color: var(--text-color); }
+        .card { border: none; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); background-color: var(--card-bg); margin-bottom: 20px; }
         
-        /* Range Bar Styling */
-        .range-wrapper { position: relative; margin-top: 25px; padding-bottom: 10px; }
+        /* === RANGE BAR STYLING (FIXED) === */
+        .range-wrapper { position: relative; margin-top: 30px; padding-bottom: 15px; height: 40px; }
+        
+        /* Thanh ngang (Track) */
         .range-track { 
-            position: relative; height: 12px; background: #e9ecef; border-radius: 6px; 
-            width: 100%; overflow: hidden;
+            position: absolute; top: 50%; transform: translateY(-50%);
+            height: 12px; background: #e9ecef; border-radius: 6px; 
+            width: 100%; overflow: hidden; z-index: 1;
         }
         .range-zone-safe { position: absolute; height: 100%; opacity: 0.3; }
 
-        /* Marker Styling (Triangle) */
+        /* Marker Container */
         .marker-container {
-            position: absolute; top: -14px; width: 2px; height: 30px; 
-            z-index: 10; transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute; 
+            width: 24px; height: 24px; /* Kích thước cố định để căn giữa */
+            z-index: 10; 
+            transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(-50%) translateY(-50%); /* Căn giữa tâm vào điểm phần trăm */
+            display: flex; align-items: center; justify-content: center;
         }
+        
         .marker-icon { 
-            font-size: 1.2rem; position: absolute; left: -8px; top: 0; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 1.2rem; /* Kích thước tam giác */
+            line-height: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1); 
         }
-        /* Phân biệt Trong nhà (Trên) / Ngoài trời (Dưới) */
-        .marker-in { top: -22px; } /* Mũi tên chỉ xuống */
-        .marker-out { top: 6px; }  /* Mũi tên chỉ lên */
-        .marker-out .marker-icon { transform: rotate(180deg); }
 
+        /* Vị trí chính xác cho mũi tên */
+        /* Track cao 12px -> tâm track là 0. Marker In ở trên, Out ở dưới */
+        
+        /* Marker Trong nhà (Mũi tên chỉ xuống ▼) */
+        /* Top 50% là giữa thanh. Trừ đi 14px để mũi nhọn chạm mép trên */
+        .marker-in { top: calc(50% - 16px); } 
+        
+        /* Marker Ngoài trời (Mũi tên chỉ lên ▲) */
+        /* Top 50% là giữa thanh. Cộng thêm 16px để mũi nhọn chạm mép dưới */
+        .marker-out { top: calc(50% + 16px); } 
+        
         /* Giá trị hiển thị */
-        .metric-value { font-size: 2.5rem; font-weight: 700; line-height: 1; }
-        .metric-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+        .metric-value { font-size: 2.8rem; font-weight: 700; line-height: 1; letter-spacing: -1px; }
+        .metric-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.2px; opacity: 0.6; font-weight: 600; }
 
-        /* Màu sắc chuẩn hóa */
-        .c-good { color: #00cc66; }
-        .c-mod { color: #ffde33; text-shadow: 0 0 1px #999; }
-        .c-unhealthy-sens { color: #ff9933; }
-        .c-unhealthy { color: #cc0033; }
-        .c-very { color: #660099; }
-        .c-haz { color: #7e0023; }
+        /* Footer Professional */
+        .footer-credit { font-size: 0.85rem; opacity: 0.8; letter-spacing: 0.5px; }
+        .footer-date { font-size: 0.75rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
 
-        .c-cold { color: #3498db; }
-        .c-comf { color: #2ecc71; }
-        .c-hot { color: #e74c3c; }
-
-        .c-dry { color: #f39c12; }
-        .c-wet { color: #3498db; }
     </style>
 </head>
-<body class="bg-body-tertiary">
+<body>
 
     <nav class="navbar navbar-expand-lg sticky-top bg-body shadow-sm mb-4">
         <div class="container">
@@ -89,7 +95,7 @@
                             <div class="small fw-bold text-muted">Trong nhà</div>
                         </div>
                         <div class="text-end">
-                            <div class="h3 mb-0 fw-bold" id="val-aqi-out" style="opacity: 0.7;">--</div>
+                            <div class="h3 mb-0 fw-bold" id="val-aqi-out" style="opacity: 0.6;">--</div>
                             <div class="small text-muted">Ngoài trời</div>
                         </div>
                     </div>
@@ -108,10 +114,10 @@
                             <i class="fa-solid fa-caret-down marker-icon"></i>
                         </div>
                         <div id="mark-aqi-out" class="marker-container marker-out">
-                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                            <i class="fa-solid fa-caret-up marker-icon"></i>
                         </div>
                     </div>
-                    <div class="text-center mt-3 small fst-italic" id="advice-aqi">Đang tải dữ liệu...</div>
+                    <div class="text-center mt-1 small fst-italic" id="advice-aqi">Đang kết nối...</div>
                 </div>
             </div>
 
@@ -128,13 +134,13 @@
                             <div class="small fw-bold text-muted">Trong nhà</div>
                         </div>
                         <div class="text-end">
-                            <div class="h3 mb-0 fw-bold" id="val-temp-out" style="opacity: 0.7;">--</div>
+                            <div class="h3 mb-0 fw-bold" id="val-temp-out" style="opacity: 0.6;">--</div>
                             <div class="small text-muted">Ngoài trời</div>
                         </div>
                     </div>
 
                     <div class="range-wrapper">
-                        <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.7em;">
+                        <div class="d-flex justify-content-between small text-muted w-100 position-absolute" style="top: -20px; font-size: 0.7em;">
                             <span>10°C</span><span>40°C</span>
                         </div>
                         <div class="range-track bg-secondary-subtle">
@@ -145,10 +151,10 @@
                             <i class="fa-solid fa-caret-down marker-icon"></i>
                         </div>
                         <div id="mark-temp-out" class="marker-container marker-out">
-                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                            <i class="fa-solid fa-caret-up marker-icon"></i>
                         </div>
                     </div>
-                    <div class="text-center mt-3 small text-muted">Vùng thoải mái: 20°C - 28°C</div>
+                    <div class="text-center mt-1 small text-muted">Vùng thoải mái: 20°C - 28°C</div>
                 </div>
             </div>
 
@@ -165,13 +171,13 @@
                             <div class="small fw-bold text-muted">Trong nhà</div>
                         </div>
                         <div class="text-end">
-                            <div class="h3 mb-0 fw-bold" id="val-hum-out" style="opacity: 0.7;">--</div>
+                            <div class="h3 mb-0 fw-bold" id="val-hum-out" style="opacity: 0.6;">--</div>
                             <div class="small text-muted">Ngoài trời</div>
                         </div>
                     </div>
 
                     <div class="range-wrapper">
-                        <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.7em;">
+                         <div class="d-flex justify-content-between small text-muted w-100 position-absolute" style="top: -20px; font-size: 0.7em;">
                             <span>20%</span><span>100%</span>
                         </div>
                         <div class="range-track bg-secondary-subtle">
@@ -182,10 +188,10 @@
                             <i class="fa-solid fa-caret-down marker-icon"></i>
                         </div>
                         <div id="mark-hum-out" class="marker-container marker-out">
-                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                            <i class="fa-solid fa-caret-up marker-icon"></i>
                         </div>
                     </div>
-                    <div class="text-center mt-3 small text-muted">Vùng thoải mái: 40% - 60%</div>
+                    <div class="text-center mt-1 small text-muted">Vùng thoải mái: 40% - 60%</div>
                 </div>
             </div>
         </div>
@@ -210,9 +216,14 @@
             </div>
         </div>
 
-        <div class="text-center text-muted small my-4 opacity-50">
-            Dữ liệu được cập nhật mỗi 5 phút • IoT Lab Vũ Phạm Hàm
-        </div>
+        <footer class="text-center py-5 mt-4 border-top">
+            <div class="footer-credit fw-bold text-uppercase">
+                IoT Innovation Lab by Dương & Hoàng
+            </div>
+            <div class="footer-date">
+                Special Edition • December 2025 • Celebrating Hoàng's Birthday
+            </div>
+        </footer>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -270,10 +281,10 @@
             const elOut = document.getElementById(`val-${type}-out`);
             
             elIn.innerText = Math.round(valIn);
-            elIn.style.color = colorFunc(valIn); // Màu chữ trong nhà
+            elIn.style.color = colorFunc(valIn); 
             
             elOut.innerText = Math.round(valOut);
-            elOut.style.color = colorFunc(valOut); // Màu chữ ngoài trời
+            elOut.style.color = colorFunc(valOut); 
 
             // Update Marker Position
             const pctIn = Math.min(Math.max((valIn - min)/(max - min)*100, 0), 100);
@@ -285,7 +296,7 @@
             markIn.style.left = `${pctIn}%`;
             markOut.style.left = `${pctOut}%`;
 
-            // Update Marker Color (Icon color)
+            // Update Marker Color
             markIn.querySelector('i').style.color = colorFunc(valIn);
             markOut.querySelector('i').style.color = colorFunc(valOut);
         }
@@ -297,14 +308,14 @@
             if(v<=300) return '#660099'; return '#7e0023';
         }
         const getColorTemp = (v) => {
-            if(v<18) return '#3498db'; // Lạnh
-            if(v<=28) return '#2ecc71'; // Thoải mái
-            return '#e74c3c'; // Nóng
+            if(v<18) return '#3498db'; 
+            if(v<=28) return '#2ecc71'; 
+            return '#e74c3c'; 
         }
         const getColorHum = (v) => {
-            if(v<40) return '#f39c12'; // Khô
-            if(v<=60) return '#2ecc71'; // Thoải mái
-            return '#3498db'; // Ẩm ướt
+            if(v<40) return '#f39c12'; 
+            if(v<=60) return '#2ecc71'; 
+            return '#3498db'; 
         }
 
         function updateAdvice(aqiIn, aqiOut) {
@@ -317,7 +328,6 @@
         }
 
         function calcAQI(pm25) {
-            // (Giữ nguyên logic tính toán cũ...)
             let c=pm25, i_lo, i_hi, c_lo, c_hi;
             if (c<=12.0){c_lo=0;c_hi=12.0;i_lo=0;i_hi=50;}
             else if (c<=35.4){c_lo=12.1;c_hi=35.4;i_lo=51;i_hi=100;}
@@ -337,7 +347,6 @@
                 return `${date.getHours()}:${date.getMinutes()<10?'0':''}${date.getMinutes()}`;
             });
 
-            // Tính trung bình
             const avgAQI = data.reduce((s, x) => s + (x.aqi||calcAQI(x.pm25)), 0) / data.length;
             const avgTemp = data.reduce((s, x) => s + x.temp, 0) / data.length;
             const avgHum = data.reduce((s, x) => s + x.hum, 0) / data.length;
@@ -410,7 +419,6 @@
             });
         }
 
-        // Start
         loadData();
         setInterval(loadData, 300000);
     </script>
