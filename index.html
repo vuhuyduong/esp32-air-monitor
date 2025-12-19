@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Monitor - Vũ Phạm Hàm</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --chart-grid-color: rgba(0, 0, 0, 0.1);
+        }
+        [data-bs-theme="dark"] {
+            --chart-grid-color: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .aqi-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        .aqi-value { font-size: 2.5rem; line-height: 1; }
+        .aqi-label { font-size: 0.9rem; text-transform: uppercase; }
+        .sensor-val { font-size: 1.8rem; font-weight: 700; }
+        .updated-time { font-size: 0.8rem; opacity: 0.7; }
+        
+        /* AQI Colors */
+        .bg-good { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .bg-moderate { background: linear-gradient(135deg, #f6d365, #fda085); }
+        .bg-unhealthy-sens { background: linear-gradient(135deg, #ff9a9e, #fecfef); color: #555; }
+        .bg-unhealthy { background: linear-gradient(135deg, #ff512f, #dd2476); }
+        .bg-very-unhealthy { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .bg-hazardous { background: linear-gradient(135deg, #434343, #000000); }
+    </style>
+</head>
+<body class="bg-body-tertiary">
+
+    <nav class="navbar navbar-expand-lg sticky-top bg-body shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fa-solid fa-wind text-primary"></i> AirMonitor <span class="badge bg-primary rounded-pill" style="font-size: 0.6em;">IoT</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-end d-none d-sm-block">
+                    <div class="fw-bold small"><i class="fa-solid fa-location-dot text-danger"></i> Vũ Phạm Hàm, HN</div>
+                    <div class="small text-muted" id="clock">--:--:--</div>
+                </div>
+                <button class="btn btn-outline-secondary rounded-circle" id="themeToggle">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h6 class="text-uppercase text-muted ls-1">Chất lượng không khí hiện tại</h6>
+                <div id="last-updated" class="updated-time mb-3">Đang tải dữ liệu...</div>
+                
+                <div id="aqi-circle" class="aqi-circle bg-secondary mb-3">
+                    <span class="aqi-value" id="aqi-display">--</span>
+                    <span class="aqi-label">AQI</span>
+                </div>
+                <h3 class="fw-bold" id="aqi-text">Đang kết nối...</h3>
+                <p class="text-muted w-75 mx-auto" id="aqi-desc">Hệ thống đang lấy dữ liệu từ cảm biến...</p>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4 col-12">
+                <div class="card h-100 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold"><i class="fa-solid fa-smog me-1"></i> BỤI MỊN PM2.5</span>
+                        <span class="badge bg-secondary rounded-pill" id="pm25-badge">--</span>
+                    </div>
+                    <div class="text-center py-2">
+                        <div class="sensor-val text-primary" id="pm25-val">--</div>
+                        <div class="small text-muted">µg/m³</div>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" id="pm25-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-6">
+                <div class="card h-100 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold"><i class="fa-solid fa-temperature-half me-1"></i> NHIỆT ĐỘ</span>
+                        <i class="fa-solid fa-circle-check text-success" id="temp-icon"></i>
+                    </div>
+                    <div class="text-center py-2">
+                        <div class="sensor-val text-danger" id="temp-val">--</div>
+                        <div class="small text-muted">°C (Thoải mái: 20-28°)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-6">
+                <div class="card h-100 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold"><i class="fa-solid fa-droplet me-1"></i> ĐỘ ẨM</span>
+                        <i class="fa-solid fa-circle-check text-success" id="hum-icon"></i>
+                    </div>
+                    <div class="text-center py-2">
+                        <div class="sensor-val text-info" id="hum-val">--</div>
+                        <div class="small text-muted">% (Thoải mái: 40-60%)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8 col-12">
+                <div class="card p-3">
+                    <h6 class="fw-bold mb-3">Diễn biến 24 giờ qua</h6>
+                    <canvas id="mainChart" height="250"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4 col-12">
+                <div class="card p-3 h-100">
+                    <h6 class="fw-bold mb-3">Khuyến nghị sức khỏe</h6>
+                    <ul class="list-group list-group-flush" id="recommendations">
+                        <li class="list-group-item bg-transparent"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 text-muted small">
+        <p>&copy; 2024 IoT Lab - Vũ Phạm Hàm.<br>Phát triển bởi <b>Dương & Hoàng</b>.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // --- CẤU HÌNH ---
+        // Thay URL này bằng URL Google Script của anh (phải deploy ở chế độ 'Anyone')
+        const DATA_API_URL = "https://script.google.com/macros/s/AKfycbyzwQubYecHa6ufT30CVHOX2WijC78SLCkH3uhVrwhOcGaulakZ6QuzzVnjQy6TGTq7Mg/exec"; 
+        
+        // --- LOGIC APP ---
+        let mainChart;
+
+        // 1. Đồng hồ thời gian thực
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('vi-VN');
+        }, 1000);
+
+        // 2. Chuyển đổi Theme Sáng/Tối
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-bs-theme') === 'dark';
+            html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
+            themeToggle.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+            if(mainChart) mainChart.update(); // Update màu lưới biểu đồ
+        });
+
+        // 3. Hàm lấy dữ liệu
+        async function fetchData() {
+            try {
+                const response = await fetch(DATA_API_URL);
+                const json = await response.json();
+                
+                if (json.status === 'success') {
+                    updateDashboard(json.current);
+                    updateChart(json.history);
+                }
+            } catch (error) {
+                console.error("Lỗi lấy dữ liệu:", error);
+                document.getElementById('aqi-text').innerText = "Mất kết nối!";
+            }
+        }
+
+        // 4. Hàm cập nhật giao diện Dashboard
+        function updateDashboard(data) {
+            if (!data) return;
+
+            // Xử lý thời gian
+            const date = new Date(data.timestamp);
+            document.getElementById('last-updated').innerText = `Cập nhật: ${date.toLocaleString('vi-VN')}`;
+
+            // Cập nhật PM2.5
+            document.getElementById('pm25-val').innerText = data.pm25;
+            document.getElementById('pm25-bar').style.width = Math.min((data.pm25 / 100) * 100, 100) + "%";
+            
+            // Cập nhật Nhiệt độ
+            document.getElementById('temp-val').innerText = data.temp;
+            const tempIcon = document.getElementById('temp-icon');
+            if(data.temp >= 20 && data.temp <= 28) tempIcon.className = "fa-solid fa-circle-check text-success";
+            else tempIcon.className = "fa-solid fa-circle-exclamation text-warning";
+
+            // Cập nhật Độ ẩm
+            document.getElementById('hum-val').innerText = data.hum;
+            const humIcon = document.getElementById('hum-icon');
+            if(data.hum >= 40 && data.hum <= 60) humIcon.className = "fa-solid fa-circle-check text-success";
+            else humIcon.className = "fa-solid fa-circle-exclamation text-warning";
+
+            // Tính toán và hiển thị AQI
+            // Nếu API trả về AQI thì dùng luôn, không thì tính lại
+            const aqi = data.aqi ? data.aqi : calcAQI(data.pm25);
+            updateAQIUI(aqi);
+            updateRecommendations(aqi, data.temp, data.hum);
+        }
+
+        // 5. Hàm tính AQI (Client-side fallback)
+        function calcAQI(pm25) {
+            // Logic giống hệt code C++
+            let c = pm25;
+            let i_lo, i_hi, c_lo, c_hi;
+            if (c <= 12.0) { c_lo=0; c_hi=12.0; i_lo=0; i_hi=50; }
+            else if (c <= 35.4) { c_lo=12.1; c_hi=35.4; i_lo=51; i_hi=100; }
+            else if (c <= 55.4) { c_lo=35.5; c_hi=55.4; i_lo=101; i_hi=150; }
+            else if (c <= 150.4) { c_lo=55.5; c_hi=150.4; i_lo=151; i_hi=200; }
+            else if (c <= 250.4) { c_lo=150.5; c_hi=250.4; i_lo=201; i_hi=300; }
+            else { c_lo=250.5; c_hi=500.4; i_lo=301; i_hi=500; }
+            return Math.round(((i_hi - i_lo) / (c_hi - c_lo)) * (c - c_lo) + i_lo);
+        }
+
+        // 6. Cập nhật màu sắc AQI
+        function updateAQIUI(aqi) {
+            const circle = document.getElementById('aqi-circle');
+            const val = document.getElementById('aqi-display');
+            const text = document.getElementById('aqi-text');
+            const desc = document.getElementById('aqi-desc');
+            const badge = document.getElementById('pm25-badge');
+
+            val.innerText = aqi;
+            
+            // Reset class
+            circle.className = 'aqi-circle mb-3';
+            
+            if (aqi <= 50) {
+                circle.classList.add('bg-good');
+                text.innerText = "Tốt"; text.className = "fw-bold text-success";
+                desc.innerText = "Không khí trong lành. Tuyệt vời cho hoạt động ngoài trời.";
+                badge.className = "badge bg-success rounded-pill"; badge.innerText = "Tốt";
+            } else if (aqi <= 100) {
+                circle.classList.add('bg-moderate');
+                text.innerText = "Trung bình"; text.className = "fw-bold text-warning";
+                desc.innerText = "Chấp nhận được. Người nhạy cảm nên hạn chế ra ngoài.";
+                badge.className = "badge bg-warning rounded-pill"; badge.innerText = "TB";
+            } else if (aqi <= 150) {
+                circle.classList.add('bg-unhealthy-sens');
+                text.innerText = "Kém"; text.className = "fw-bold text-warning-emphasis";
+                desc.innerText = "Người già và trẻ em có thể bị ảnh hưởng. Đóng cửa sổ.";
+                badge.className = "badge bg-warning text-dark rounded-pill"; badge.innerText = "Kém";
+            } else {
+                circle.classList.add('bg-unhealthy');
+                text.innerText = "Xấu"; text.className = "fw-bold text-danger";
+                desc.innerText = "Cảnh báo sức khỏe khẩn cấp. Nên đeo khẩu trang và bật máy lọc khí.";
+                badge.className = "badge bg-danger rounded-pill"; badge.innerText = "Xấu";
+            }
+        }
+
+        // 7. Tạo danh sách khuyến nghị
+        function updateRecommendations(aqi, temp, hum) {
+            const ul = document.getElementById('recommendations');
+            ul.innerHTML = ''; // Xóa cũ
+
+            const addRec = (icon, text, color="text-body") => {
+                ul.innerHTML += `<li class="list-group-item bg-transparent ${color}"><i class="${icon} me-2"></i>${text}</li>`;
+            };
+
+            if(aqi > 100) addRec("fa-solid fa-mask", "Đeo khẩu trang khi ra ngoài.", "text-danger");
+            if(aqi > 35 && aqi <= 100) addRec("fa-solid fa-window-close", "Nên đóng cửa sổ nếu gió to.", "text-warning");
+            if(aqi <= 35) addRec("fa-solid fa-door-open", "Mở cửa thông gió nhà cửa.", "text-success");
+
+            if(temp > 30) addRec("fa-solid fa-temperature-arrow-up", "Trời nóng, uống nhiều nước.");
+            if(temp < 18) addRec("fa-solid fa-temperature-arrow-down", "Trời lạnh, mặc ấm cho bé.");
+
+            if(hum > 80) addRec("fa-solid fa-water", "Nồm ẩm! Bật chế độ Dry điều hòa.");
+            if(hum < 40) addRec("fa-solid fa-droplet-slash", "Khô hanh! Dùng máy phun sương.");
+        }
+
+        // 8. Vẽ biểu đồ Chart.js
+        function updateChart(historyData) {
+            // Chuẩn bị dữ liệu
+            // Chỉ lấy tối đa 20 điểm dữ liệu gần nhất để đồ thị đỡ rối
+            const data = historyData.slice(-20);
+            const labels = data.map(d => {
+                const date = new Date(d.timestamp);
+                return `${date.getHours()}:${date.getMinutes()}`;
+            });
+            const pm25Data = data.map(d => d.pm25);
+            const tempData = data.map(d => d.temp);
+
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (mainChart) mainChart.destroy(); // Hủy biểu đồ cũ
+
+            mainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Bụi PM2.5',
+                            data: pm25Data,
+                            borderColor: '#ff512f',
+                            backgroundColor: 'rgba(255, 81, 47, 0.2)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Nhiệt độ (°C)',
+                            data: tempData,
+                            borderColor: '#38f9d7',
+                            backgroundColor: 'rgba(56, 249, 215, 0.1)',
+                            tension: 0.4,
+                            borderDash: [5, 5],
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        x: { grid: { color: getComputedStyle(document.body).getPropertyValue('--chart-grid-color') } },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'PM2.5 (µg/m³)' },
+                            grid: { color: getComputedStyle(document.body).getPropertyValue('--chart-grid-color') }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chạy lần đầu
+        fetchData();
+        // Tự động cập nhật mỗi 5 phút
+        setInterval(fetchData, 300000);
+
+    </script>
+</body>
+</html>
