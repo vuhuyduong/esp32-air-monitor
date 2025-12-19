@@ -3,165 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Monitor - So sánh Trong nhà & Ngoài trời</title>
+    <title>Air Monitor - Advanced Visualization</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --chart-grid-color: rgba(0, 0, 0, 0.1); --card-bg: #ffffff; }
-        [data-bs-theme="dark"] { --chart-grid-color: rgba(255, 255, 255, 0.1); --card-bg: #212529; }
+        :root { --card-bg: #ffffff; --text-color: #212529; }
+        [data-bs-theme="dark"] { --card-bg: #212529; --text-color: #f8f9fa; }
         
-        body { font-family: 'Inter', sans-serif; transition: 0.3s; }
-        .card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); background-color: var(--card-bg); }
+        body { font-family: 'Inter', sans-serif; transition: 0.3s; background-color: var(--bs-body-bg); color: var(--text-color); }
+        .card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); background-color: var(--card-bg); margin-bottom: 20px; }
         
-        /* Range Bar Styles */
-        .range-container { position: relative; height: 30px; background: #e9ecef; border-radius: 15px; margin-top: 15px; overflow: hidden; }
-        .range-safe-zone { position: absolute; height: 100%; background-color: rgba(25, 135, 84, 0.2); border-left: 2px solid #198754; border-right: 2px solid #198754; z-index: 1; }
-        .marker { position: absolute; top: -5px; width: 2px; height: 40px; background: #000; z-index: 10; transition: left 1s ease-out; }
-        .marker-icon { position: absolute; top: -25px; left: -12px; font-size: 1.2rem; }
-        .marker.indoor { background: #0d6efd; }
-        .marker.indoor .marker-icon { color: #0d6efd; }
-        .marker.outdoor { background: #6c757d; height: 20px; top: 15px; } /* Marker ngoài trời nằm dưới */
-        .marker.outdoor .marker-icon { top: 20px; color: #6c757d; }
+        /* Range Bar Styling */
+        .range-wrapper { position: relative; margin-top: 25px; padding-bottom: 10px; }
+        .range-track { 
+            position: relative; height: 12px; background: #e9ecef; border-radius: 6px; 
+            width: 100%; overflow: hidden;
+        }
+        .range-zone-safe { position: absolute; height: 100%; opacity: 0.3; }
 
-        /* AQI Badge Colors */
-        .bg-aqi-good { background-color: #009966; color: white; }
-        .bg-aqi-mod { background-color: #ffde33; color: black; }
-        .bg-aqi-unhealthy-sens { background-color: #ff9933; color: white; }
-        .bg-aqi-unhealthy { background-color: #cc0033; color: white; }
-        .bg-aqi-very { background-color: #660099; color: white; }
-        .bg-aqi-haz { background-color: #7e0023; color: white; }
+        /* Marker Styling (Triangle) */
+        .marker-container {
+            position: absolute; top: -14px; width: 2px; height: 30px; 
+            z-index: 10; transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .marker-icon { 
+            font-size: 1.2rem; position: absolute; left: -8px; top: 0; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        /* Phân biệt Trong nhà (Trên) / Ngoài trời (Dưới) */
+        .marker-in { top: -22px; } /* Mũi tên chỉ xuống */
+        .marker-out { top: 6px; }  /* Mũi tên chỉ lên */
+        .marker-out .marker-icon { transform: rotate(180deg); }
+
+        /* Giá trị hiển thị */
+        .metric-value { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+        .metric-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+
+        /* Màu sắc chuẩn hóa */
+        .c-good { color: #00cc66; }
+        .c-mod { color: #ffde33; text-shadow: 0 0 1px #999; }
+        .c-unhealthy-sens { color: #ff9933; }
+        .c-unhealthy { color: #cc0033; }
+        .c-very { color: #660099; }
+        .c-haz { color: #7e0023; }
+
+        .c-cold { color: #3498db; }
+        .c-comf { color: #2ecc71; }
+        .c-hot { color: #e74c3c; }
+
+        .c-dry { color: #f39c12; }
+        .c-wet { color: #3498db; }
     </style>
 </head>
 <body class="bg-body-tertiary">
 
-    <nav class="navbar navbar-expand-lg sticky-top bg-body shadow-sm">
+    <nav class="navbar navbar-expand-lg sticky-top bg-body shadow-sm mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-wind text-primary"></i> AirMonitor</a>
+            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-wind text-primary me-2"></i>AirMonitor</a>
             <div class="d-flex align-items-center gap-3">
                 <div class="text-end d-none d-sm-block">
                     <div class="fw-bold small"><i class="fa-solid fa-location-dot text-danger"></i> Vũ Phạm Hàm, HN</div>
                     <div class="small text-muted" id="clock">--:--:--</div>
                 </div>
-                <button class="btn btn-outline-secondary rounded-circle" id="themeToggle"><i class="fa-solid fa-moon"></i></button>
+                <button class="btn btn-outline-secondary rounded-circle border-0" id="themeToggle"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </nav>
 
-    <div class="container py-4">
-        <div class="row g-4 mb-4">
+    <div class="container">
+        <div class="row g-4 mb-2">
             
             <div class="col-md-4">
-                <div class="card h-100 p-3">
-                    <h6 class="text-uppercase text-muted small fw-bold mb-3">Chất lượng không khí (AQI)</h6>
-                    <div class="d-flex justify-content-between align-items-end mb-2">
-                        <div>
-                            <div class="display-4 fw-bold text-primary" id="aqi-in">--</div>
-                            <span class="badge bg-primary">Trong nhà</span>
-                        </div>
-                        <div class="text-end">
-                            <div class="h3 text-secondary" id="aqi-out">--</div>
-                            <span class="badge bg-secondary">Ngoài trời</span>
-                        </div>
+                <div class="card h-100 p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="metric-label"><i class="fa-solid fa-lungs me-1"></i> AQI</span>
+                        <span class="badge rounded-pill bg-light text-dark border">US EPA</span>
                     </div>
                     
-                    <div class="range-wrapper mt-3">
-                        <div class="d-flex justify-content-between small text-muted mb-1">
-                            <span>Tốt (0)</span>
-                            <span>Nguy hại (300+)</span>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <div class="metric-value" id="val-aqi-in">--</div>
+                            <div class="small fw-bold text-muted">Trong nhà</div>
                         </div>
-                        <div class="range-container">
-                            <div class="range-safe-zone" style="left: 0%; width: 16.6%; background-color: #009966;"></div>
-                            <div class="range-safe-zone" style="left: 16.6%; width: 16.6%; background-color: #ffde33;"></div>
-                            
-                            <div id="marker-aqi-in" class="marker indoor" style="left: 0%;">
-                                <i class="fa-solid fa-house marker-icon"></i>
-                            </div>
-                            <div id="marker-aqi-out" class="marker outdoor" style="left: 0%;">
-                                <i class="fa-solid fa-cloud marker-icon"></i>
-                            </div>
+                        <div class="text-end">
+                            <div class="h3 mb-0 fw-bold" id="val-aqi-out" style="opacity: 0.7;">--</div>
+                            <div class="small text-muted">Ngoài trời</div>
                         </div>
-                        <div class="mt-2 text-center small fst-italic" id="aqi-advice">Đang tải...</div>
                     </div>
+
+                    <div class="range-wrapper">
+                        <div class="range-track">
+                            <div style="position:absolute; left:0%; width:16.6%; height:100%; background:#009966;"></div>
+                            <div style="position:absolute; left:16.6%; width:16.6%; height:100%; background:#ffde33;"></div>
+                            <div style="position:absolute; left:33.3%; width:16.6%; height:100%; background:#ff9933;"></div>
+                            <div style="position:absolute; left:50%; width:16.6%; height:100%; background:#cc0033;"></div>
+                            <div style="position:absolute; left:66.6%; width:16.6%; height:100%; background:#660099;"></div>
+                            <div style="position:absolute; left:83.3%; width:16.6%; height:100%; background:#7e0023;"></div>
+                        </div>
+                        
+                        <div id="mark-aqi-in" class="marker-container marker-in">
+                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                        </div>
+                        <div id="mark-aqi-out" class="marker-container marker-out">
+                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3 small fst-italic" id="advice-aqi">Đang tải dữ liệu...</div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card h-100 p-3">
-                    <h6 class="text-uppercase text-muted small fw-bold mb-3">Nhiệt độ (°C)</h6>
-                    <div class="d-flex justify-content-between align-items-end mb-2">
+                <div class="card h-100 p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="metric-label"><i class="fa-solid fa-temperature-half me-1"></i> NHIỆT ĐỘ</span>
+                        <span class="badge rounded-pill bg-light text-dark border">°C</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-end">
                         <div>
-                            <div class="display-4 fw-bold text-danger" id="temp-in">--</div>
-                            <span class="badge bg-danger">Trong nhà</span>
+                            <div class="metric-value" id="val-temp-in">--</div>
+                            <div class="small fw-bold text-muted">Trong nhà</div>
                         </div>
                         <div class="text-end">
-                            <div class="h3 text-secondary" id="temp-out">--</div>
-                            <span class="badge bg-secondary">Ngoài trời</span>
+                            <div class="h3 mb-0 fw-bold" id="val-temp-out" style="opacity: 0.7;">--</div>
+                            <div class="small text-muted">Ngoài trời</div>
                         </div>
                     </div>
 
-                    <div class="range-wrapper mt-3">
-                        <div class="d-flex justify-content-between small text-muted mb-1">
-                            <span>10°C</span>
-                            <span>40°C</span>
+                    <div class="range-wrapper">
+                        <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.7em;">
+                            <span>10°C</span><span>40°C</span>
                         </div>
-                        <div class="range-container">
-                            <div class="range-safe-zone" style="left: 33%; width: 26%;"></div> <div id="marker-temp-in" class="marker indoor" style="left: 0%;">
-                                <i class="fa-solid fa-house marker-icon"></i>
-                            </div>
-                            <div id="marker-temp-out" class="marker outdoor" style="left: 0%;">
-                                <i class="fa-solid fa-cloud marker-icon"></i>
-                            </div>
+                        <div class="range-track bg-secondary-subtle">
+                            <div class="range-zone-safe bg-success" style="left: 33%; width: 26%;"></div>
                         </div>
-                        <div class="mt-2 text-center small text-muted">Vùng thoải mái: 20°C - 28°C</div>
+                        
+                        <div id="mark-temp-in" class="marker-container marker-in">
+                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                        </div>
+                        <div id="mark-temp-out" class="marker-container marker-out">
+                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                        </div>
                     </div>
+                    <div class="text-center mt-3 small text-muted">Vùng thoải mái: 20°C - 28°C</div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card h-100 p-3">
-                    <h6 class="text-uppercase text-muted small fw-bold mb-3">Độ ẩm (%)</h6>
-                    <div class="d-flex justify-content-between align-items-end mb-2">
+                <div class="card h-100 p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="metric-label"><i class="fa-solid fa-droplet me-1"></i> ĐỘ ẨM</span>
+                        <span class="badge rounded-pill bg-light text-dark border">%</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-end">
                         <div>
-                            <div class="display-4 fw-bold text-info" id="hum-in">--</div>
-                            <span class="badge bg-info">Trong nhà</span>
+                            <div class="metric-value" id="val-hum-in">--</div>
+                            <div class="small fw-bold text-muted">Trong nhà</div>
                         </div>
                         <div class="text-end">
-                            <div class="h3 text-secondary" id="hum-out">--</div>
-                            <span class="badge bg-secondary">Ngoài trời</span>
+                            <div class="h3 mb-0 fw-bold" id="val-hum-out" style="opacity: 0.7;">--</div>
+                            <div class="small text-muted">Ngoài trời</div>
                         </div>
                     </div>
 
-                    <div class="range-wrapper mt-3">
-                        <div class="d-flex justify-content-between small text-muted mb-1">
-                            <span>20%</span>
-                            <span>100%</span>
+                    <div class="range-wrapper">
+                        <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.7em;">
+                            <span>20%</span><span>100%</span>
                         </div>
-                        <div class="range-container">
-                            <div class="range-safe-zone" style="left: 25%; width: 25%;"></div>
-                            
-                            <div id="marker-hum-in" class="marker indoor" style="left: 0%;">
-                                <i class="fa-solid fa-house marker-icon"></i>
-                            </div>
-                            <div id="marker-hum-out" class="marker outdoor" style="left: 0%;">
-                                <i class="fa-solid fa-cloud marker-icon"></i>
-                            </div>
+                        <div class="range-track bg-secondary-subtle">
+                            <div class="range-zone-safe bg-success" style="left: 25%; width: 25%;"></div>
                         </div>
-                        <div class="mt-2 text-center small text-muted">Vùng thoải mái: 40% - 60%</div>
+                        
+                        <div id="mark-hum-in" class="marker-container marker-in">
+                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                        </div>
+                        <div id="mark-hum-out" class="marker-container marker-out">
+                            <i class="fa-solid fa-caret-down marker-icon"></i>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3 small text-muted">Vùng thoải mái: 40% - 60%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card p-3 h-100">
+                    <h6 class="fw-bold mb-3 small text-uppercase ls-1"><i class="fa-solid fa-chart-line me-2"></i>Diễn biến Bụi (AQI)</h6>
+                    <div style="height: 250px;">
+                        <canvas id="chartAQI"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card p-3 h-100">
+                    <h6 class="fw-bold mb-3 small text-uppercase ls-1"><i class="fa-solid fa-chart-area me-2"></i>Nhiệt độ & Độ ẩm</h6>
+                    <div style="height: 250px;">
+                        <canvas id="chartTempHum"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-3 mb-4">
-            <h6 class="fw-bold mb-3">Biểu đồ theo dõi (Trong nhà)</h6>
-            <canvas id="mainChart" height="100"></canvas>
-        </div>
-        
-        <div class="text-center text-muted small">
-            Dữ liệu ngoài trời cung cấp bởi Open-Meteo API (Tọa độ: Vũ Phạm Hàm)
+        <div class="text-center text-muted small my-4 opacity-50">
+            Dữ liệu được cập nhật mỗi 5 phút • IoT Lab Vũ Phạm Hàm
         </div>
     </div>
 
@@ -173,13 +223,10 @@
         // Thay URL Google Script của anh vào đây
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyzwQubYecHa6ufT30CVHOX2WijC78SLCkH3uhVrwhOcGaulakZ6QuzzVnjQy6TGTq7Mg/exec"; 
         
-        // Tọa độ Vũ Phạm Hàm, Hà Nội
-        const LAT = 21.013;
-        const LON = 105.799;
-
-        // API Open-Meteo (Không cần Key)
-        const OUTDOOR_WEATHER_API = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m&timezone=Asia%2FBangkok`;
-        const OUTDOOR_AQI_API = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi&timezone=Asia%2FBangkok`;
+        // Cấu hình Open-Meteo
+        const LAT = 21.013; const LON = 105.799;
+        const API_WEATHER = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m&timezone=Asia%2FBangkok`;
+        const API_AQI = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi&timezone=Asia%2FBangkok`;
 
         // Đồng hồ
         setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'), 1000);
@@ -188,85 +235,89 @@
             h.setAttribute('data-bs-theme', h.getAttribute('data-bs-theme')==='dark'?'light':'dark');
         });
 
-        // HÀM CHÍNH: Lấy dữ liệu
-        async function fetchAllData() {
+        // --- MAIN LOGIC ---
+        async function loadData() {
             try {
-                // 1. Gọi song song 3 API (Google Script, Weather, AQI)
-                const [resIndoor, resWeather, resAqi] = await Promise.all([
+                const [resIn, resW, resA] = await Promise.all([
                     fetch(GAS_URL).then(r => r.json()),
-                    fetch(OUTDOOR_WEATHER_API).then(r => r.json()),
-                    fetch(OUTDOOR_AQI_API).then(r => r.json())
+                    fetch(API_WEATHER).then(r => r.json()),
+                    fetch(API_AQI).then(r => r.json())
                 ]);
 
-                // 2. Xử lý dữ liệu Trong nhà
-                if(resIndoor.status === 'success') {
-                    const d = resIndoor.current;
+                if(resIn.status === 'success') {
+                    const d = resIn.current;
                     const aqiIn = d.aqi || calcAQI(d.pm25);
+                    const aqiOut = resA.current.us_aqi;
                     
-                    updateMetric('aqi', aqiIn, 'in', 0, 300); // Scale AQI 0-300
-                    updateMetric('temp', d.temp, 'in', 10, 40); // Scale Temp 10-40
-                    updateMetric('hum', d.hum, 'in', 20, 100); // Scale Hum 20-100
-                    
-                    drawChart(resIndoor.history);
-                    
-                    // Logic So sánh & Lời khuyên
-                    compareAndAdvise(aqiIn, resAqi.current.us_aqi);
-                }
+                    // 1. Cập nhật Cards với Màu Sắc Động
+                    updateCard('aqi', aqiIn, aqiOut, 0, 300, getColorAQI);
+                    updateCard('temp', d.temp, resW.current.temperature_2m, 10, 40, getColorTemp);
+                    updateCard('hum', d.hum, resW.current.relative_humidity_2m, 20, 100, getColorHum);
 
-                // 3. Xử lý dữ liệu Ngoài trời
-                if(resWeather.current && resAqi.current) {
-                    updateMetric('temp', resWeather.current.temperature_2m, 'out', 10, 40);
-                    updateMetric('hum', resWeather.current.relative_humidity_2m, 'out', 20, 100);
-                    updateMetric('aqi', resAqi.current.us_aqi, 'out', 0, 300);
-                }
+                    // 2. Lời khuyên AQI
+                    updateAdvice(aqiIn, aqiOut);
 
-            } catch (e) {
-                console.error("Lỗi:", e);
-            }
+                    // 3. Vẽ biểu đồ
+                    drawCharts(resIn.history);
+                }
+            } catch (e) { console.error(e); }
         }
 
-        // Hàm cập nhật số và vị trí thanh trượt
-        function updateMetric(type, value, loc, min, max) {
-            // Update số
-            const elVal = document.getElementById(`${type}-${loc}`);
-            if(elVal) elVal.innerText = Math.round(value);
+        // --- HELPER: MÀU SẮC ĐỘNG ---
+        function updateCard(type, valIn, valOut, min, max, colorFunc) {
+            // Update Text Values & Colors
+            const elIn = document.getElementById(`val-${type}-in`);
+            const elOut = document.getElementById(`val-${type}-out`);
+            
+            elIn.innerText = Math.round(valIn);
+            elIn.style.color = colorFunc(valIn); // Màu chữ trong nhà
+            
+            elOut.innerText = Math.round(valOut);
+            elOut.style.color = colorFunc(valOut); // Màu chữ ngoài trời
 
-            // Update vị trí marker
-            // Tính phần trăm: (value - min) / (max - min) * 100
-            let percent = ((value - min) / (max - min)) * 100;
-            if(percent < 0) percent = 0;
-            if(percent > 100) percent = 100;
+            // Update Marker Position
+            const pctIn = Math.min(Math.max((valIn - min)/(max - min)*100, 0), 100);
+            const pctOut = Math.min(Math.max((valOut - min)/(max - min)*100, 0), 100);
 
-            const elMarker = document.getElementById(`marker-${type}-${loc}`);
-            if(elMarker) elMarker.style.left = `${percent}%`;
+            const markIn = document.getElementById(`mark-${type}-in`);
+            const markOut = document.getElementById(`mark-${type}-out`);
+
+            markIn.style.left = `${pctIn}%`;
+            markOut.style.left = `${pctOut}%`;
+
+            // Update Marker Color (Icon color)
+            markIn.querySelector('i').style.color = colorFunc(valIn);
+            markOut.querySelector('i').style.color = colorFunc(valOut);
         }
 
-        // Logic đưa ra lời khuyên thông minh
-        function compareAndAdvise(aqiIn, aqiOut) {
-            const div = document.getElementById('aqi-advice');
-            let msg = "";
-            let color = "text-muted";
+        // Logic màu sắc
+        const getColorAQI = (v) => {
+            if(v<=50) return '#00cc66'; if(v<=100) return '#ffde33'; 
+            if(v<=150) return '#ff9933'; if(v<=200) return '#cc0033';
+            if(v<=300) return '#660099'; return '#7e0023';
+        }
+        const getColorTemp = (v) => {
+            if(v<18) return '#3498db'; // Lạnh
+            if(v<=28) return '#2ecc71'; // Thoải mái
+            return '#e74c3c'; // Nóng
+        }
+        const getColorHum = (v) => {
+            if(v<40) return '#f39c12'; // Khô
+            if(v<=60) return '#2ecc71'; // Thoải mái
+            return '#3498db'; // Ẩm ướt
+        }
 
-            if (aqiIn > 100) {
-                msg = "Cảnh báo: Không khí trong nhà xấu! ";
-                color = "text-danger fw-bold";
-                if (aqiOut < aqiIn) msg += "Ngoài trời sạch hơn, hãy mở cửa sổ ngay.";
-                else msg += "Nhưng ngoài trời cũng bẩn, hãy bật máy lọc khí và đóng kín cửa.";
+        function updateAdvice(aqiIn, aqiOut) {
+            const el = document.getElementById('advice-aqi');
+            if(aqiIn > 100) {
+                el.innerHTML = `<span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation"></i> CẢNH BÁO:</span> Trong nhà ô nhiễm! ${aqiOut < aqiIn ? 'Mở cửa ngay.' : 'Bật lọc khí.'}`;
             } else {
-                if (aqiOut > 150) {
-                    msg = "Ngoài trời rất bụi. Tuyệt đối không mở cửa sổ lúc này.";
-                    color = "text-warning fw-bold";
-                } else {
-                    msg = "Không khí trong nhà ổn định.";
-                    color = "text-success";
-                }
+                el.innerHTML = `<span class="text-success"><i class="fa-solid fa-check-circle"></i></span> Không khí trong nhà an toàn.`;
             }
-            div.className = `mt-2 text-center small fst-italic ${color}`;
-            div.innerText = msg;
         }
 
-        // Hàm tính AQI fallback
         function calcAQI(pm25) {
+            // (Giữ nguyên logic tính toán cũ...)
             let c=pm25, i_lo, i_hi, c_lo, c_hi;
             if (c<=12.0){c_lo=0;c_hi=12.0;i_lo=0;i_hi=50;}
             else if (c<=35.4){c_lo=12.1;c_hi=35.4;i_lo=51;i_hi=100;}
@@ -275,40 +326,93 @@
             return Math.round(((i_hi-i_lo)/(c_hi-c_lo))*(c-c_lo)+i_lo);
         }
 
-        // Vẽ biểu đồ Line
-        let myChart;
-        function drawChart(history) {
-            const data = history.slice(-24); // Lấy 24 điểm cuối
-            const labels = data.map(d => new Date(d.timestamp).getHours() + 'h');
-            
-            const ctx = document.getElementById('mainChart');
-            if(myChart) myChart.destroy();
-            
-            myChart = new Chart(ctx, {
+        // --- CHARTS ---
+        let chartAQI, chartTH;
+
+        function drawCharts(history) {
+            // Lấy 30 điểm gần nhất
+            const data = history.slice(-30);
+            const labels = data.map(d => {
+                const date = new Date(d.timestamp);
+                return `${date.getHours()}:${date.getMinutes()<10?'0':''}${date.getMinutes()}`;
+            });
+
+            // Tính trung bình
+            const avgAQI = data.reduce((s, x) => s + (x.aqi||calcAQI(x.pm25)), 0) / data.length;
+            const avgTemp = data.reduce((s, x) => s + x.temp, 0) / data.length;
+            const avgHum = data.reduce((s, x) => s + x.hum, 0) / data.length;
+
+            // Chart 1: AQI
+            const ctx1 = document.getElementById('chartAQI');
+            if(chartAQI) chartAQI.destroy();
+            chartAQI = new Chart(ctx1, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'PM2.5 Trong nhà',
-                        data: data.map(d => d.pm25),
-                        borderColor: '#0d6efd',
-                        tension: 0.4,
-                        fill: true,
-                        backgroundColor: 'rgba(13, 110, 253, 0.1)'
-                    }]
+                    datasets: [
+                        {
+                            label: 'AQI',
+                            data: data.map(d => d.aqi || calcAQI(d.pm25)),
+                            borderColor: '#e67e22',
+                            backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                            fill: true, tension: 0.4
+                        },
+                        {
+                            label: 'Trung bình',
+                            data: Array(data.length).fill(avgAQI),
+                            borderColor: '#e67e22', borderDash: [5, 5], pointRadius: 0, borderWidth: 1
+                        }
+                    ]
                 },
-                options: {
-                    responsive: true,
+                options: { responsive: true, maintainAspectRatio: false, interaction: {mode: 'index', intersect: false} }
+            });
+
+            // Chart 2: Temp & Hum
+            const ctx2 = document.getElementById('chartTempHum');
+            if(chartTH) chartTH.destroy();
+            chartTH = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Nhiệt độ (°C)',
+                            data: data.map(d => d.temp),
+                            borderColor: '#e74c3c',
+                            yAxisID: 'y', tension: 0.4
+                        },
+                        {
+                            label: 'TB Nhiệt',
+                            data: Array(data.length).fill(avgTemp),
+                            borderColor: '#e74c3c', borderDash: [5, 5], pointRadius: 0, borderWidth: 1, yAxisID: 'y'
+                        },
+                        {
+                            label: 'Độ ẩm (%)',
+                            data: data.map(d => d.hum),
+                            borderColor: '#3498db',
+                            yAxisID: 'y1', tension: 0.4
+                        },
+                        {
+                            label: 'TB Ẩm',
+                            data: Array(data.length).fill(avgHum),
+                            borderColor: '#3498db', borderDash: [5, 5], pointRadius: 0, borderWidth: 1, yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: {mode: 'index', intersect: false},
                     scales: {
-                        y: { beginAtZero: true }
+                        y: { type: 'linear', display: true, position: 'left', title: {display: true, text: 'Nhiệt độ'} },
+                        y1: { type: 'linear', display: true, position: 'right', title: {display: true, text: 'Độ ẩm'}, grid: {drawOnChartArea: false} }
                     }
                 }
             });
         }
 
-        // Chạy ngay và lặp lại
-        fetchAllData();
-        setInterval(fetchAllData, 300000); // 5 phút cập nhật 1 lần
+        // Start
+        loadData();
+        setInterval(loadData, 300000);
     </script>
 </body>
 </html>
